@@ -1,0 +1,142 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta http-equiv="pragma" content="no-cache" />
+    <meta name="page-view-size" content="1920*1080">
+    <!-- <meta name="page-view-size" content="1280*720"> -->
+    <title>亿付数字</title>
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/bootstrap.css" />
+    <link rel="stylesheet" href="css/common.css" />
+</head>
+
+<body>
+    <div class="container" id="app">
+        <div id="header">
+            <div class="logo"></div>
+            <div class="top_menu">
+                <ul>
+                    <li><span class="icon icon_home"></span><span class="company"></span></li>
+                    <li><span class="icon icon_user"></span><span class="realName"></span>·<span class="position"></span></li>
+                    <li class="logout"> | <span class="icon icon_logout"></span>退出</li>
+                </ul>
+            </div>
+        </div>
+        <div id="details_content">
+            <div class="breadcrumb btn-group-xs"><span class="goback">返回</span> | 代付工资明细 <a href="/search.html" class="btn btn-success flr">明细查询</a></div>
+            <div class="row">
+                <div class="col-sm-12">
+                    <table class="table table-striped min-table" border="0" cellspacing="0" cellpadding="0">
+                        <thead>
+                            <tr>
+                                <th>批次号</th>
+                                <th>业务类型</th>
+                                <th>工资周期</th>
+                                <th>总笔数</th>
+                                <th>总金额</th>
+                                <th>申请人</th>
+                                <th>提交日期</th>
+                                <th>状态</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr role="row" v-for="item in dataList">
+                                <td>{{item.paidBatchNo}}</td>
+                                <td>{{item.transferType}}</td>
+                                <td>{{item.transferCycle}}</td>
+                                <td>{{item.payerTotalNum}}</td>
+                                <td>{{item.totalAmt}}</td>
+                                <td>{{item.applicant}}</td>
+                                <td>{{item.submitDate}}</td>
+                                <td>{{item.tradeStatus}}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="page_wrap">
+                </div>
+            </div>
+<!--             <div class="bottom">
+                <div class="form-group btn-wrap">
+                    <button type="button" class="btn btn-success btn-block" @click="upload">下一步</button>
+                </div>
+            </div> -->
+        </div>
+    </div>
+    <script src="js/common.js"></script>
+    <script src="js/vue.min.js"></script>
+    <script type="text/javascript">
+    new Vue({
+        el: '#app',
+        data: {
+            dataList: null,
+            filepath: '',
+            dialog: false,
+            nowPage: ''
+        },
+        ready: function() {
+            this.getBatchInfoList(1);
+        },
+        methods: {
+            getBatchInfoList: function(num) {
+                var url = CONFIG.apiHost + 'queryTransferBatchInfo.do?paidBatchNo=&token=' + Utils.getlocalStorage('token') + '&currentPage=' + num;
+                var xhr = new XMLHttpRequest();
+                var self = this;
+                xhr.open('GET', url);
+                xhr.onload = function() {
+                    var res = JSON.parse(xhr.responseText);
+                    self.dataList = res.result;
+                    console.log(self.dataList);
+                    self.createPage(0, res.totalCount);
+                }
+                xhr.send();
+            },
+            upload: function() {
+                // android.uploadExcel(this.filePath);
+            },
+            createPage: function(now, total) {
+                var wrap = document.querySelector('.page_wrap');
+                var self = this;
+                if (wrap.innerHTML) {
+                    return;
+                }
+                for (var i = 0; i < total / 8; i++) {
+                    if (now == i) {
+                        wrap.innerHTML += '<i class="current">' + (i + 1) + '</i>';
+                    } else {
+                        wrap.innerHTML += '<i>' + (i + 1) + '</i>';
+                    }
+                }
+                if (total / 8 > 1) {
+
+                }
+                var aLi = wrap.querySelectorAll('i');
+                for (var i = 0; i < aLi.length; i++) {
+                    // 点击翻页
+                    aLi[i].addEventListener('click', function() {
+                        self.nowPage = this.innerHTML * 1;
+                        self.getBatchInfoList(self.nowPage);
+                        self.checkoutPage();
+                    })
+                }
+            },
+            checkoutPage: function() {
+                var self = this;
+                var wrap = document.querySelector('.page_wrap');
+                var aLi = wrap.querySelectorAll('i');
+                for (var i = 0; i < aLi.length; i++) {
+                    if (self.nowPage != i + 1) {
+                        aLi[i].className = '';
+                    } else {
+                        aLi[i].className = 'current';
+                    }
+                }
+            }
+        }
+    })
+    </script>
+</body>
+
+</html>

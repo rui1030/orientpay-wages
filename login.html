@@ -1,0 +1,133 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta http-equiv="pragma" content="no-cache" />
+    <meta name="page-view-size" content="1920*1080">
+    <!-- <meta name="page-view-size" content="1280*720"> -->
+    <title>亿付数字</title>
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/bootstrap.css" />
+    <link rel="stylesheet" href="css/common.css" />
+</head>
+
+<body>
+    <div class="container" id="app">
+        <div id="header">
+            <div class="logo"></div>
+        </div>
+        <div id="content">
+            <div class="banner"><img src="img/pic01.png" alt="" /></div>
+            <div class="login">
+                <div class="title">帐号密码登录</div>
+                <form action="">
+                    <div class="alert" v-show="alert">帐号或密码错误，请重新登录!</div>
+                    <div class="form-group">
+                        <div class="col-sm-9">
+                            <input type="text" class="form-control company" placeholder="选择公司 ▼" v-model="company" @click="dropdown=true">
+                        </div>
+                    </div>
+                    <div class="dropdown" v-show="dropdown">
+                        <ul id="list">
+                            <li v-for="item in companyList" @click="selectCompany" data-num={{item.id}}>{{item.companyName}}</li>
+                        </ul>
+                    </div>
+                    <div class="form-group">
+                        <div class="col-sm-9">
+                            <input type="text" class="form-control username" placeholder="用户名" v-model="loginName" name="loginName" @focus="input">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="col-sm-9">
+                            <input type="text" class="form-control password" placeholder="请输入登录密码" v-model="loginPassword" name="loginPassword" @focus="input">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="col-sm-9">
+                            <button type="button" class="btn btn-success btn-block" @click="login">确定</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="copyright">亿付数字 版权所有</div>
+    </div>
+    <script src="js/common.js"></script>
+    <script src="js/vue.min.js"></script>
+    <script>
+    new Vue({
+        el: '#app',
+        data: {
+            companyList: '',
+            dropdown: false,
+            company: '',
+            companyId: '',
+            loginName: '',
+            loginPassword: '',
+            alert: false
+        },
+        ready: function() {
+            this.getComList();
+        },
+        methods: {
+            getComList: function() {
+                var url = CONFIG.apiHost + 'queryCompanyItem.do';
+                var xhr = new XMLHttpRequest();
+                var self = this;
+                xhr.open('GET', url);
+                xhr.onload = function () {
+                    self.companyList = JSON.parse(xhr.responseText).result;
+                    console.log(self.companyList);
+                }
+                xhr.send();
+            },
+            selectCompany: function (event) {
+                this.dropdown = false;
+                this.company = event.target.innerHTML;
+                this.companyId = event.target.dataset.num;
+            },
+            login: function (event) {
+                // 帐号密码为空
+                if(!this.loginName || !this.loginPassword){
+                    return this.alert = true;
+                }
+
+                var url = CONFIG.apiHost + 'login.do?loginName=' + this.loginName + '&loginPassword=' + this.loginPassword + '&companyId=' + this.companyId;
+                var xhr = new XMLHttpRequest();
+                var self = this;
+                xhr.open('POST', url);
+                xhr.onload = function () {
+                    var res = JSON.parse(xhr.responseText);
+                    // 登录失败
+                    if(!res.success){
+                        return self.alert = true;
+                    }
+                    var result = res.result;
+                    // 存储token & userinfo
+                    Utils.setlocalStorage('token', res.token);
+                    Utils.setlocalStorage('userinfo', JSON.stringify(result));
+                    // 操作员
+                    if(result.root == '01'){
+                        console.log('操作员')
+                        location.href = '/index.html'
+                    }
+                    // 管理员
+                    if(result.root == '02'){
+                        console.log('管理员')
+                        location.href = '/index-admin.html'
+                    }
+                    console.log(JSON.parse(xhr.responseText));
+
+                }
+                xhr.send();
+            },
+            input: function () {
+                this.alert = false;
+            }
+        }
+    });
+    </script>
+</body>
+
+</html>

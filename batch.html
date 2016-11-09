@@ -1,0 +1,225 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta http-equiv="pragma" content="no-cache" />
+    <meta name="page-view-size" content="1920*1080">
+    <title>亿付数字</title>
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/bootstrap.css" />
+    <link rel="stylesheet" href="css/common.css" />
+</head>
+
+<body>
+    <div class="container" id="app">
+		<div class="dialog" v-show="dialog">
+			<div class="content">
+				<h4>未找到excel文件<br />请确认优盘已接入机顶盒并且文件已存放着在U盘根目录的’excel'文件夹下</h4>
+		        <div class="form-group btn-wrap">
+		            <button type="button" class="btn btn-success btn-block" @click="reload">{{btnText}}</button>
+		        </div>				
+			</div>
+
+		</div>
+		<div class="dialog" v-show="alert">
+			<div class="content">
+				<div class="close" @click="alert=false">X</div>
+				<h4>放弃本次操作？</h4>				
+			
+		        <div class="form-group btn-wrap">
+		            <button type="button" class="btn btn-success" @click="goback">确定</button>
+		        </div>
+	        </div>
+		</div>
+		<div class="dialog" v-show="error">
+			<div class="content">
+				<h4>文件解析异常！</h4>				
+			
+		        <div class="form-group btn-wrap">
+		            <button type="button" class="btn btn-success" @click="error=false">确定</button>
+		        </div>
+	        </div>
+		</div>
+        <div id="header">
+            <div class="logo"></div>
+            <div class="top_menu">
+                <ul>
+                <li><span class="icon icon_home"></span><span class="company"></span></li>
+                <li><span class="icon icon_user"></span><span class="realName"></span>·<span class="position"></span></li>
+                <li class="logout"> | <span class="icon icon_logout"></span>退出</li>
+                </ul>
+            </div>
+        </div>
+        <!-- header end -->
+        <div id="details_content">
+            <div class="breadcrumb"><span class="hover" @click="alert=true">返回</span> | 批量代付工资</div>
+            <div class="row">
+                <div class="col-sm-12">
+                    <table class="table table-striped" border="0" cellspacing="0" cellpadding="0">
+                        <thead>
+                            <tr>
+                                <th>公司名称</th>
+                                <th>业务类型</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr role="row">
+                                <td>{{companyName}}</td>
+                                <td>代付工资</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="select" v-show="select">
+                <div class="title">请选择需要上传的文件 <span>(批量文件支持500笔转账信息，超出此数量请分批上传)</span></div>
+                <div class="list_wrap">
+                	<ul id="list">
+                		<li v-for="item in dataList" data-path={{item.filepath}} @click="selected"  v-cloak>
+                			{{item.filename}}
+                		</li>
+                	</ul>
+                </div>
+            </div>
+            <!-- select end -->
+            <div class="choose" v-show="choose">
+                <div class="row">
+                    <div class="col-sm-12">
+                        <table class="table table-striped min-table" border="0" cellspacing="0" cellpadding="0">
+                            <thead>
+                                <tr>
+                                    <th>工资周期</th>
+                                    <th>总笔数</th>
+                                    <th>总金额</th>
+                                    <th>大写</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr role="row">
+                                    <td>{{batchInfoData.transferCycle}}</td>
+                                    <td>{{batchInfoData.payerTotalNum}}</td>
+                                    <td>{{batchInfoData.totalAmt}}</td>
+                                    <td>{{batchInfoData.totalAmt}}</td>
+                                    <td>
+                                        <button type="button" class="btn btn-success btn-xs">查看明细</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <!-- choose list end -->
+            <div class="bottom">
+                <div class="form-group btn-wrap">
+                    <button type="button" class="btn btn-success btn-block" @click="upload">{{btnTxt}}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="js/common.js"></script>
+    <script src="js/vue.min.js"></script>
+    <script type="text/javascript">
+    // alert(0);
+
+    // <!-- 获取excel列表  该函数用于h5调用android-->
+    function chooseExcel() {
+            // <!-- 获取excel列表 -->
+
+    }
+
+    if(!android){
+    	var android = {};
+    }
+
+    var vm = new Vue({
+        el: '#app',
+        data: {
+            dataList: null,
+            filepath: '',
+            dialog: false,
+            alert: false,
+            select: true,
+            choose: false,
+            error: false,
+            btnText: '已接入U盘，重新读取文件',
+            companyName: JSON.parse(Utils.getlocalStorage('userinfo')).companyName,
+            batchInfoData: '',
+            btnTxt: '下一步'
+        },
+        ready: function () {
+        	this.readfile();
+        },
+		methods: {
+			readfile: function () {
+				// alert('on ready');
+				var result = JSON.parse(android.chooseExcel());
+		        if(!result.status){
+		        	return this.dialog = true;
+		        }
+				this.dataList = result.result;
+			},
+		    upload: function () {
+		    	this.loading = true;
+		      	android.uploadExcel(this.filePath);
+		    },
+		    selected: function (event) {
+		      	this.filePath = event.target.dataset.path;
+		      	var ali = document.getElementById('list').getElementsByTagName('li');
+		      	for(var i=0;i<ali.length;i++){
+		      		ali[i].className = '';
+		      	}
+		      	event.target.className = 'select';
+		      	console.log(this.filePath);
+		    },
+		    reload: function () {
+		    	this.btnText = "正在搜索U盘...";
+		    	setTimeout(function(){
+			    	location.href = location.href;
+		    	},5000);
+		    },
+		    goback: function () {
+                var url = CONFIG.apiHost + 'deleteTransferInfo.do?paidBatchNo=&token=' + Utils.getlocalStorage('token') + '&currentPage=' + num;
+                var xhr = new XMLHttpRequest();
+                var self = this;
+                xhr.open('GET', url);
+                xhr.onload = function() {
+                    var res = JSON.parse(xhr.responseText);
+                    self.dataList = res.result;
+                    console.log(self.dataList);
+                    self.createPage(0, res.totalCount);
+                }
+                xhr.send();
+		    	history.go(-1);
+		    }
+		}
+    })
+
+    // <!-- 上传excel  该函数用于h5调用android-->
+    function uploadExcel() {
+        // <!-- 这里是需要上传的excel的全路径 h5页面选择的excel -->
+        var excelPath = "/sdcard/excel/1.xls"
+        android.uploadExcel(excelPath);
+    }
+
+    // <!-- 上传excel结果通知 该函数用于android调用h5-->
+    function uploadResult(filePath, uploadResult, msg) {
+    	alert(msg);
+    	var res = JSON.parse(msg)[0];
+    	if(!res.success){
+    		return vm.error = true;
+    	}
+    	vm.batchInfoData = res.result;
+    	vm.select = false;
+    	vm.choose = true;
+    	vm.btnTxt = '提交';
+        // alert("uploadResult filePath=>" + filePath + ",result====>" + uploadResult)
+    }
+
+    // setTimeout(chooseExcel,3000);
+    </script>
+</body>
+
+</html>
